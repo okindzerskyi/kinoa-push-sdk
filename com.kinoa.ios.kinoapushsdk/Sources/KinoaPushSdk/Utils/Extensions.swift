@@ -18,7 +18,13 @@ internal extension Date {
 class Preferences {
     static func get<T>(defaultValue: T, forKey key: String) -> T {
         let preferences = UserDefaults.standard
-        return preferences.object(forKey: key) == nil ? defaultValue : preferences.object(forKey: key) as! T
+        guard let object = preferences.object(forKey: key) else {
+            return defaultValue
+        }
+        guard let result = object as? T else {
+            return defaultValue
+        }
+        return result
     }
 
     static func set(value: Any, forKey key: String) {
@@ -28,7 +34,9 @@ class Preferences {
 
 internal extension UNNotificationRequest {
     var attachment: UNNotificationAttachment? {
-        guard let attachmentURL = content.userInfo["imageUrl"] as? String, let imageData = try? Data(contentsOf: URL(string: attachmentURL)!) else {
+        guard let attachmentURL = content.userInfo["imageUrl"] as? String,
+              let url = URL(string: attachmentURL),
+              let imageData = try? Data(contentsOf: url) else {
             return nil
         }
         return try? UNNotificationAttachment(data: imageData, options: nil)

@@ -45,7 +45,7 @@ internal class KinoaRequestBuilder {
     }
     
     @available(iOS 13.0, *)
-    public func buildAndAuthorize() -> URLRequest {
+    public func buildAndAuthorize() -> URLRequest? {
         var queryParams = ""
         for (key, value) in params {
             queryParams += "\(key)=\(value)&"
@@ -55,15 +55,32 @@ internal class KinoaRequestBuilder {
             queryParams.remove(at: queryParams.index(before: queryParams.endIndex))
         }
         
-        let url = URL(string: baseUrl! + endpoint! + queryParams)
-        var request = URLRequest(url: url!)
+        guard let baseUrl = baseUrl, let endpoint = endpoint else {
+            KinoaLogger.instance.LOG(message: "Base URL and endpoint must be set before building request")
+            return nil
+        }
+        
+        guard let url = URL(string: baseUrl + endpoint + queryParams) else {
+            KinoaLogger.instance.LOG(message: "Invalid URL constructed from baseUrl: \(baseUrl), endpoint: \(endpoint), queryParams: \(queryParams)")
+            return nil
+        }
+        
+        var request = URLRequest(url: url)
         request.httpMethod = httpMethod
 
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(SDK.instance.gameSecrets!.gameId, forHTTPHeaderField: "Game-Id")
+        
+        guard let gameSecrets = SDK.instance.gameSecrets else {
+            KinoaLogger.instance.LOG(message: "Game secrets not initialized")
+            return nil
+        }
+        request.setValue(gameSecrets.gameId, forHTTPHeaderField: "Game-Id")
         request.httpBody = data
         
-        let auth = KinoaGameAuthUtils.calculateGameAuth(endpoint: endpoint! + queryParams, request: request);
+        guard let auth = KinoaGameAuthUtils.calculateGameAuth(endpoint: endpoint + queryParams, request: request) else {
+            KinoaLogger.instance.LOG(message: "Failed to calculate game auth")
+            return nil
+        }
         request.setValue(auth, forHTTPHeaderField: "Game-Auth")
         return request
     }

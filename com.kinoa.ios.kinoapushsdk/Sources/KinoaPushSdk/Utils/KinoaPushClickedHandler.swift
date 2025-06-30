@@ -26,9 +26,10 @@ internal class KinoaPushClickedHandler {
         
         let userInfo = notification.request.content.userInfo
         let notificationId = notification.request.identifier
-        let campaignId = userInfo[CAMPAIGN_ID_KEY] as? String
-        if (campaignId == nil) { return nil }
-        var clickedData = KinoaPushNotificationClickedData(notificationIdentifier: notificationId, campaignId: campaignId!)
+        guard let campaignId = userInfo[CAMPAIGN_ID_KEY] as? String else { 
+            return nil 
+        }
+        var clickedData = KinoaPushNotificationClickedData(notificationIdentifier: notificationId, campaignId: campaignId)
         
         let iterationNumber = userInfo[ITERATION_NUMBER_KEY] as? String
         clickedData.iterationNumber = iterationNumber
@@ -36,27 +37,31 @@ internal class KinoaPushClickedHandler {
         let decoder = JSONDecoder()
         
         let inAppData = userInfo[IN_APP_DATA_KEY] as? String
-        if (inAppData != nil && !(inAppData!.isEmpty)) {
-            let jsonData = Data(inAppData!.utf8)
+        if let inAppData = inAppData, !inAppData.isEmpty {
+            let jsonData = Data(inAppData.utf8)
             clickedData.inAppData = try? decoder.decode(KinoaInAppData.self, from: jsonData)
         }
 
         let internalLinkData = userInfo[INTERNAL_LINK_KEY] as? String
-        if (internalLinkData != nil && !(internalLinkData!.isEmpty)) {
-            let jsonData = Data(internalLinkData!.utf8)
+        if let internalLinkData = internalLinkData, !internalLinkData.isEmpty {
+            let jsonData = Data(internalLinkData.utf8)
             clickedData.internalLink = try? decoder.decode(KinoaInternalLinkData.self, from: jsonData)
         }
 
         let extraData = userInfo[EXTRA_DATA_KEY] as? String
-        if (extraData != nil && !(extraData!.isEmpty)) {
-            let obj = extraData?.toJSON() as? Dictionary<String, String>
+        if let extraData = extraData, !extraData.isEmpty {
+            let obj = extraData.toJSON() as? Dictionary<String, String>
             clickedData.extraData = obj
         }
         
         Task {
-            let analyticData = KinoaPushClickAnalyticData(campaignId: campaignId!, iterationNumber: iterationNumber)
+            let analyticData = KinoaPushClickAnalyticData(campaignId: campaignId, iterationNumber: iterationNumber)
             let response = await SDK.instance.updatePushClickAnalytic(pushClickAnalyticData: analyticData)
-            print("Update Click Analytic Kinoa Response: \(response!.httpResponse.statusCode)")
+            if let response = response {
+                print("Update Click Analytic Kinoa Response: \(response.httpResponse.statusCode)")
+            } else {
+                print("Update Click Analytic Kinoa Response: No response received")
+            }
         }
             
         return clickedData

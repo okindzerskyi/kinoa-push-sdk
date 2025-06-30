@@ -52,7 +52,11 @@ class SDK {
             }
             let response = await kinoaPushService.updateBadgeCounter(playerId: KinoaPlayer.instance.playerId, badgeCounterValue: badgeCount)
             
-            print("Update Badge Counter Kinoa Response: \(response!.httpResponse.statusCode)")
+            if let response = response {
+                print("Update Badge Counter Kinoa Response: \(response.httpResponse.statusCode)")
+            } else {
+                print("Update Badge Counter Kinoa Response: No response received")
+            }
         }
     }
     
@@ -69,8 +73,11 @@ class SDK {
                 deviceToken: token,
                 tokenGeneratedTs: tokenGeneratedTs,
                 lastLoginTs: lastLoginTs)
-            print("Register Token Kinoa Response: \(response!.httpResponse.statusCode)")
-        
+            if let response = response {
+                print("Register Token Kinoa Response: \(response.httpResponse.statusCode)")
+            } else {
+                print("Register Token Kinoa Response: No response received")
+            }
         }
     }
     
@@ -174,8 +181,8 @@ class SDK {
     }
     
     public func processClickedNotification(notification: UNNotification?) -> KinoaPushNotificationClickedData? {
-        if (notification != nil) {
-            return KinoaPushClickedHandler.instance.process(notification: notification!)
+        if let notification = notification {
+            return KinoaPushClickedHandler.instance.process(notification: notification)
         }
         return nil
     }
